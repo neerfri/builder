@@ -1,0 +1,9 @@
+[template]
+src   = "receiver"
+dest  = "/home/git/receiver"
+uid = 101
+gid = 101
+mode  = "0755"
+keys = [
+  "/deis/controller",
+]

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# spawn a docker daemon to run builds
+/usr/local/bin/docker -d &
+
+# start an SSH daemon to process `git push` requests
+/usr/sbin/sshd -D -e
+
