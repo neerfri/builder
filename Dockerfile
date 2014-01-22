@@ -1,4 +1,4 @@
-FROM jpetazzo/dind
+FROM deis/base
 MAINTAINER Gabriel Monroy <gabriel@opdemand.com>
 
 ENV DEBIAN_FRONTEND noninteractive
@@ -16,33 +16,37 @@ RUN apt-get install -yq openssh-server
 RUN rm /etc/ssh/ssh_host_*
 RUN dpkg-reconfigure openssh-server
 RUN mkdir -p /var/run/sshd
-# generate a local to suppress warnings
-RUN locale-gen en_US.UTF-8
 
-# install git and gitreceive
+# install hook utilities
+RUN apt-get install -yq curl vim
+
+# install git and configure gitreceive
+ENV GITHOME /home/git
+ENV GITUSER git
 RUN apt-get install -yq git
-RUN git clone https://github.com/gabrtv/gitreceive.git /app
-RUN /app/gitreceive init
+RUN useradd -d $GITHOME $GITUSER
+RUN mkdir -p $GITHOME/.ssh && touch $GITHOME/.ssh/authorized_keys
 
 # let the git user run `sudo docker`
 RUN apt-get install -yq sudo
 RUN echo "%git    ALL=(ALL:ALL) NOPASSWD:/usr/local/bin/docker" >> /etc/sudoers
 
 # install docker in docker deps
-RUN apt-get install -yq aufs-tools
+RUN echo deb http://archive.ubuntu.com/ubuntu precise universe > /etc/apt/sources.list.d/universe.list && apt-get update
+RUN apt-get install -yq aufs-tools iptables ca-certificates lxc
 
-# install hook utilities
-RUN apt-get install -yq curl vim 
+# install latest stable docker
+ADD https://get.docker.io/builds/Linux/x86_64/docker-latest /usr/local/bin/docker
+RUN chmod +x /usr/local/bin/docker
 
-# add receiver hook and entrypoint
-ADD receiver /home/git/receiver
-ADD entry /entry
-ADD start /start
+# install custom confd
+RUN wget https://s3-us-west-2.amazonaws.com/deis/confd -O /usr/local/bin/confd
+RUN chmod +x /usr/local/bin/confd
 
-# expose an ssh daemon that runs in the foreground
-ENTRYPOINT ["/entry"]
-CMD ["/start"]
+# add the current build context to /app
+ADD . /app
 
-# install initial authorized_keys (to be managed via bind mount from host)
-ADD authorized_keys /home/git/.ssh/authorized_keys
-RUN chown git:git /home/git/.ssh/authorized_keys && chmod 600 /home/git/.ssh/authorized_keys
+# define the execution environment
+ENTRYPOINT ["/app/bin/entry"]
+CMD ["/app/bin/boot"]
+EXPOSE 22
