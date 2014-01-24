@@ -17,36 +17,39 @@ RUN rm /etc/ssh/ssh_host_*
 RUN dpkg-reconfigure openssh-server
 RUN mkdir -p /var/run/sshd
 
+# install docker in docker deps
+RUN echo deb http://archive.ubuntu.com/ubuntu precise universe > /etc/apt/sources.list.d/universe.list && apt-get update
+RUN apt-get install -yq aufs-tools iptables ca-certificates lxc
+
 # install hook utilities
 RUN apt-get install -yq curl vim
 
-# install git and configure gitreceive
+# install git and configure gituser
 ENV GITHOME /home/git
 ENV GITUSER git
 RUN apt-get install -yq git
 RUN useradd -d $GITHOME $GITUSER
-RUN mkdir -p $GITHOME/.ssh && touch $GITHOME/.ssh/authorized_keys
+RUN mkdir -p $GITHOME/.ssh && chown git:git $GITHOME/.ssh
+RUN chown -R $GITUSER:$GITUSER $GITHOME
 
-# let the git user run `sudo docker`
+# let the git user run `sudo /home/git/builder` (not writeable)
 RUN apt-get install -yq sudo
-RUN echo "%git    ALL=(ALL:ALL) NOPASSWD:/usr/local/bin/docker" >> /etc/sudoers
-
-# install docker in docker deps
-RUN echo deb http://archive.ubuntu.com/ubuntu precise universe > /etc/apt/sources.list.d/universe.list && apt-get update
-RUN apt-get install -yq aufs-tools iptables ca-certificates lxc
+RUN echo "%git    ALL=(ALL:ALL) NOPASSWD:/home/git/builder" >> /etc/sudoers
 
 # install latest stable docker
 ADD https://get.docker.io/builds/Linux/x86_64/docker-latest /usr/local/bin/docker
 RUN chmod +x /usr/local/bin/docker
 
 # install custom confd
-RUN wget https://s3-us-west-2.amazonaws.com/deis/confd -O /usr/local/bin/confd
+RUN wget -q https://s3-us-west-2.amazonaws.com/deis/confd -O /usr/local/bin/confd
 RUN chmod +x /usr/local/bin/confd
 
 # add the current build context to /app
 ADD . /app
+RUN chown -R root:root /app
 
 # define the execution environment
+VOLUME /var/lib/docker
 ENTRYPOINT ["/app/bin/entry"]
 CMD ["/app/bin/boot"]
 EXPOSE 22

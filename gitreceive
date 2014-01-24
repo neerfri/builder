@@ -1,4 +1,5 @@
 #!/bin/bash
+set -exo pipefail
 
 GITUSER=${GITUSER:-git}
 GITHOME="/home/$GITUSER"
@@ -11,6 +12,7 @@ case "$1" in
     export RECEIVE_USER=$2
     export RECEIVE_FINGERPRINT=$3
     # ssh provides the original requested command in $SSH_ORIGINAL_COMMAND
+    SSH_ORIGINAL_COMMAND="$(echo $SSH_ORIGINAL_COMMAND | sed 's/\///g' )" # remove any '/'s
     export RECEIVE_REPO="$(echo $SSH_ORIGINAL_COMMAND | awk '{print $2}' | perl -pe 's/(?<!\\)'\''//g' | sed 's/\\'\''/'\''/g')"
     REPO_PATH="$GITHOME/$RECEIVE_REPO"
     if [ ! -d $REPO_PATH ]; then
@@ -27,9 +29,11 @@ cat | $SELF hook
 EOF
     chmod +x $PRERECEIVE_HOOK
     git-shell -c "$SSH_ORIGINAL_COMMAND"
-    # if we're processing a receive-pack, run a build
-    if [[ $SSH_ORIGINAL_COMMAND == git-receive-pack* ]]; then
-      $GITHOME/builder $RECEIVE_USER $RECEIVE_REPO
+    # if we're processing a receive-pack on an existing repo, run a build
+    if [[ $SSH_ORIGINAL_COMMAND == git-receive-pack* ]] && \
+       [[ -e $REPO_PATH/refs/heads/master ]]; then
+      # SECURITY: git user runs the builder as root (for docker access)
+      sudo $GITHOME/builder $RECEIVE_USER $RECEIVE_REPO >&2
     fi
     ;;
 

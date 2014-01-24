@@ -1,16 +1,48 @@
 #!/bin/bash
 #
 # build hook called on every git receive-pack
+# NOTE: this script must be run as root (for docker access)
 #
+set -exo pipefail
+
 RECEIVE_USER=$1
 RECEIVE_REPO=$2
 
-cd $RECEIVE_REPO && mkdir -p build
+# create some directories
+cd $RECEIVE_REPO && mkdir -p {build,cache}
 tmpdir=$(mktemp --tmpdir=build -d)
-image=$RECEIVE_USER/${RECEIVE_REPO%.git}
+
+# build the slug
+# TODO: add buildpack override via => -v /packs:/tmp/buildpacks:rw
+build_cmd="docker run -i -a stdin -v `pwd`/cache:/tmp/cache:rw flynn/slugbuilder" 
+container=`git archive master | $build_cmd`
+
+# attach to build output
+docker attach $container >&2
+
+# copy slug out
+docker cp "$container:/tmp/slug.tgz" .
+
+# extract procfile
+tar xfO slug.tgz "./Procfile"
+
+# remove the container
+docker rm $container
+
+# calculate sha
+sha=$(sha256sum slug.tgz)
+
+echo "Here is where we create a build!"
+
+# dockerfile-style build
+#image="$RECEIVE_USER/${RECEIVE_REPO%.git}"
 #target={{ .deis_registry_host }}:{{ .deis_registry_port }}/$image
-git archive master | tar --extract -C $tmpdir
-sudo docker build -t $image $tmpdir >&2
-sudo docker tag $image $target >&2
-sudo docker push $target >&2
-rm -rf $tmpdir
+#git archive master | tar --extract -C $tmpdir
+#docker build -t $image $tmpdir >&2
+#docker tag $image $target >&2
+#docker push $target >&2
+
+function cleanup() {
+  rm -rf $tmpdir	
+}
+trap cleanup EXIT

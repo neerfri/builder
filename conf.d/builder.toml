@@ -1,8 +1,8 @@
 [template]
 src   = "builder"
 dest  = "/home/git/builder"
-uid = 101
-gid = 101
+uid = 0
+gid = 0
 mode  = "0755"
 keys = [
   "/deis/controller",

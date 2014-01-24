@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eo pipefail
+set -exo pipefail
 
 repository=$1
 app=${1%.git}
@@ -12,7 +12,7 @@ URL=http://{{ .deis_controller_host }}:{{ .deis_controller_port }}/api/apps/$app
 curl -v \
   -X 'POST' --fail \
   -H 'Content-Type: application/json' \
-  -H "X-Deis-Builder-Auth: $BUILDER_KEY" \
+  -H "X-Deis-Builder-Auth: {{ .deis_controller_builderKey }}" \
   -d "{\"receive_user\": \"$username\", \"receive_repo\": \"$app\", \"sha\": \"$sha\", \"fingerprint\": \"$fingerprint\", \"ssh_connection\": \"$SSH_CONNECTION\", \"ssh_original_command\": \"$SSH_ORIGINAL_COMMAND\"}" \
   --silent $URL >/dev/null
   
