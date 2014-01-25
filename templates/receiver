@@ -7,7 +7,7 @@ sha=$2
 username=$3
 fingerprint=$4
 
-URL=http://{{ .deis_controller_host }}:{{ .deis_controller_port }}/api/apps/$app/push
+URL=http://{{ .deis_controller_host }}:{{ .deis_controller_port }}/api/hooks/push
 
 curl -v \
   -X 'POST' --fail \
