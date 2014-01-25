@@ -35,10 +35,11 @@ SERVICE_PID=$!
 
 # smart shutdown on SIGINT and SIGTERM
 function on_exit() {
+    rm -f /var/run/docker.pid
 	kill -TERM $SERVICE_PID
 	wait $SERVICE_PID 2>/dev/null
 }
-trap on_exit INT TERM
+trap on_exit INT TERM EXIT
 
 # spawn confd in the background to update services based on etcd changes
 confd -node $ETCD -config-file /app/confd.toml &
