@@ -57,7 +57,7 @@ slug_path = "$tmpdir/slug.tgz"
 json_body = {}
 json_body["receive_user"] = "$RECEIVE_USER"
 json_body["receive_repo"] = "${RECEIVE_REPO%.git}"
-json_body["image"] = "$image"
+json_body["image"] = "$target"
 json_body["url"] = "http://localhost/to/be/deprecated"
 
 # extract the Procfile and convert to JSON
@@ -66,7 +66,7 @@ if os.path.exists(procfile_path):
   with open(procfile_path) as f:
     raw_procfile = f.read()
     json_body['procfile'] = json.dumps(yaml.safe_load(raw_procfile))
-  json_body["sha"] = "$(sha256sum $tmpdir/slug.tgz)"
+  json_body["sha"] = "$(sha256sum $tmpdir/slug.tgz | cut -d ' ' -f1)"
   json_body["size"] = os.stat(slug_path).st_size
   
 print(json.dumps(json_body))
@@ -78,7 +78,7 @@ curl -vvv \
   -H 'Content-Type: application/json' \
   -H "X-Deis-Builder-Auth: {{ .deis_controller_builderKey }}" \
   -d "$(python $tmpfile)" \
-  --silent http://{{ .deis_controller_host }}:{{ .deis_controller_port }}/api/hooks/build #>/dev/null
+  --silent http://{{ .deis_controller_host }}:{{ .deis_controller_port }}/api/hooks/build
 
 function cleanup() {
   set +e
