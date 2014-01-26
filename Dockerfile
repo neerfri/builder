@@ -18,8 +18,15 @@ RUN dpkg-reconfigure openssh-server
 RUN mkdir -p /var/run/sshd
 
 # install docker in docker deps
-RUN echo deb http://archive.ubuntu.com/ubuntu precise universe > /etc/apt/sources.list.d/universe.list && apt-get update
-RUN apt-get install -yq aufs-tools iptables ca-certificates lxc
+RUN echo deb http://archive.ubuntu.com/ubuntu precise universe > /etc/apt/sources.list.d/universe.list
+RUN echo "deb http://get.docker.io/ubuntu docker main" > /etc/apt/sources.list.d/docker.list
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9
+RUN apt-get update -q
+RUN apt-get install -yq aufs-tools iptables ca-certificates lxc lxc-docker
+
+# install hook dependencies
+RUN apt-get install -yq python-pip
+RUN pip install pyyaml
 
 # install hook utilities
 RUN apt-get install -yq curl vim
@@ -35,10 +42,6 @@ RUN chown -R $GITUSER:$GITUSER $GITHOME
 # let the git user run `sudo /home/git/builder` (not writeable)
 RUN apt-get install -yq sudo
 RUN echo "%git    ALL=(ALL:ALL) NOPASSWD:/home/git/builder" >> /etc/sudoers
-
-# install latest stable docker
-ADD https://get.docker.io/builds/Linux/x86_64/docker-latest /usr/local/bin/docker
-RUN chmod +x /usr/local/bin/docker
 
 # install custom confd
 RUN wget -q https://s3-us-west-2.amazonaws.com/deis/confd -O /usr/local/bin/confd

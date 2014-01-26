@@ -46,7 +46,7 @@ confd -node $ETCD -config-file /app/confd.toml &
 CONFD_PID=$!
 
 # wait for the service to become available
-sleep 1 && while ! $(netstat -lnt | awk "\$6 == \"LISTEN\" && \$4 ~ \".$PORT\" && \$1 ~ \"$PROTO.\"" >/dev/null) ; do sleep 1; done
+sleep 1 && while [[ -z $(netstat -lnt | awk "\$6 == \"LISTEN\" && \$4 ~ \".$PORT\" && \$1 ~ \"$PROTO.\"") ]] ; do sleep 1; done
 
 # as long as the service remains up, keep publishing to etcd with a TTL
 $(dirname ${BASH_SOURCE[0]})/publish &

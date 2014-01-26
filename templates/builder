@@ -9,40 +9,81 @@ RECEIVE_USER=$1
 RECEIVE_REPO=$2
 
 # create some directories
-cd $RECEIVE_REPO && mkdir -p {build,cache}
+cd $RECEIVE_REPO && mkdir -p build
 tmpdir=$(mktemp --tmpdir=build -d)
 
-# build the slug
-# TODO: add buildpack override via => -v /packs:/tmp/buildpacks:rw
-build_cmd="docker run -i -a stdin -v `pwd`/cache:/tmp/cache:rw flynn/slugbuilder" 
-container=`git archive master | $build_cmd`
+# extract master to the tmpdir
+git archive master | tar -x -C $tmpdir
 
-# attach to build output
-docker attach $container >&2
+# if no Dockerfile exists, but a Heroku-style Procfile does
+# prepare a special Dockerfile using deis/slugrunner
+if [[ ! -e $tmpdir/Dockerfile ]] && [[ -e $tmpdir/Procfile ]]; then
+  mkdir -p cache
+  build_cmd="docker run -i -a stdin -v `pwd`/cache:/tmp/cache:rw deis/slugbuilder"
+  # TODO: add buildpack override via => -v /packs:/tmp/buildpacks:rw 
+  container=`git archive master | $build_cmd`
+  docker attach $container
+  docker cp "$container:/tmp/slug.tgz" $tmpdir
+  cat > $tmpdir/Dockerfile <<EOF
+FROM deis/slugrunner
+RUN mkdir -p /app
+ADD slug.tgz /app
+ENTRYPOINT ["/runner/init"]
+EOF
+fi
 
-# copy slug out
-docker cp "$container:/tmp/slug.tgz" .
+# build the docker image
+tmpimage="$RECEIVE_USER/${RECEIVE_REPO%.git}:$tmpdir"
+docker build -t $tmpimage $tmpdir
 
-# extract procfile
-tar xfO slug.tgz "./Procfile"
+# push the image
+target="{{ .deis_registry_host }}:{{ .deis_registry_port }}/$RECEIVE_USER/${RECEIVE_REPO%.git}"
+docker tag $tmpimage $target
+docker push $target
 
-# remove the container
-docker rm $container
+# create python script to handle structured data
+# SECURITY: be very careful w/ user-supplied input
 
-# calculate sha
-sha=$(sha256sum slug.tgz)
+tmpfile=$(mktemp --tmpdir=$tmpdir)
+cat > $tmpfile <<EOF
+import json
+import os
+import tarfile
+import yaml
 
-echo "Here is where we create a build!"
+slug_path = "$tmpdir/slug.tgz"
 
-# dockerfile-style build
-#image="$RECEIVE_USER/${RECEIVE_REPO%.git}"
-#target={{ .deis_registry_host }}:{{ .deis_registry_port }}/$image
-#git archive master | tar --extract -C $tmpdir
-#docker build -t $image $tmpdir >&2
-#docker tag $image $target >&2
-#docker push $target >&2
+# construct json body for posting to the build hook
+json_body = {}
+json_body["receive_user"] = "$RECEIVE_USER"
+json_body["receive_repo"] = "${RECEIVE_REPO%.git}"
+json_body["image"] = "$image"
+json_body["url"] = "http://localhost/to/be/deprecated"
+
+# extract the Procfile and convert to JSON
+procfile_path = os.path.join("$tmpdir", "Procfile")
+if os.path.exists(procfile_path):
+  with open(procfile_path) as f:
+    raw_procfile = f.read()
+    json_body['procfile'] = json.dumps(yaml.safe_load(raw_procfile))
+  json_body["sha"] = "$(sha256sum $tmpdir/slug.tgz)"
+  json_body["size"] = os.stat(slug_path).st_size
+  
+print(json.dumps(json_body))
+EOF
+
+# trigger the hook with curl
+curl -vvv \
+  -X 'POST' --fail \
+  -H 'Content-Type: application/json' \
+  -H "X-Deis-Builder-Auth: {{ .deis_controller_builderKey }}" \
+  -d "$(python $tmpfile)" \
+  --silent http://{{ .deis_controller_host }}:{{ .deis_controller_port }}/api/hooks/build #>/dev/null
 
 function cleanup() {
-  rm -rf $tmpdir	
+  set +e
+  docker rm $container
+  docker rmi $tmpimage
+  rm -rf $tmpdir
 }
 trap cleanup EXIT
