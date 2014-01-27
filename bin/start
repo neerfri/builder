@@ -1,6 +1,9 @@
 #!/bin/bash
 set -eo pipefail
 
+# remove any pre-existing docker.sock
+rm -f /var/run/docker.sock
+
 # spawn a docker daemon to run builds
 docker -d &
 
