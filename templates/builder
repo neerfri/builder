@@ -3,7 +3,7 @@
 # build hook called on every git receive-pack
 # NOTE: this script must be run as root (for docker access)
 #
-set -exo pipefail
+set -eo pipefail
 
 RECEIVE_USER=$1
 RECEIVE_REPO=$2
@@ -66,24 +66,24 @@ if os.path.exists(procfile_path):
   with open(procfile_path) as f:
     raw_procfile = f.read()
     json_body['procfile'] = json.dumps(yaml.safe_load(raw_procfile))
-  json_body["sha"] = "$(sha256sum $tmpdir/slug.tgz | cut -d ' ' -f1)"
+  json_body["sha"] = "$(sha256sum $tmpdir/slug.tgz | cut -d ' ' -f1 >/dev/null 2>&1)"
   json_body["size"] = os.stat(slug_path).st_size
   
 print(json.dumps(json_body))
 EOF
 
 # trigger the hook with curl
-curl -vvv \
+curl \
   -X 'POST' --fail \
   -H 'Content-Type: application/json' \
   -H "X-Deis-Builder-Auth: {{ .deis_controller_builderKey }}" \
   -d "$(python $tmpfile)" \
-  --silent http://{{ .deis_controller_host }}:{{ .deis_controller_port }}/api/hooks/build
+  --silent http://{{ .deis_controller_host }}:{{ .deis_controller_port }}/api/hooks/build >/dev/null
 
 function cleanup() {
   set +e
-  docker rm $container
-  docker rmi $tmpimage
+  docker rm $container >/dev/null 2>&1
+  docker rmi $tmpimage >/dev/null 2>&1
   rm -rf $tmpdir
 }
 trap cleanup EXIT
