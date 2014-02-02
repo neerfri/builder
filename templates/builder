@@ -57,12 +57,12 @@ fi
 
 # build the docker image
 echo
-echo_title "Building Docker image..."
+echo_title "Building Docker image"
 docker build -t $TMP_IMAGE .
 docker tag $TMP_IMAGE $TARGET_IMAGE
 
 # push the image
-echo_title "Pushing to private Deis registry -> $TARGET_IMAGE"
+echo_title "Pushing image to private registry -> $TARGET_IMAGE"
 docker push $TARGET_IMAGE >/dev/null 2>&1
 
 # create python script to handle structured data
