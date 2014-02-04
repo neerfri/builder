@@ -26,7 +26,7 @@ RUN apt-get install -yq aufs-tools iptables ca-certificates lxc lxc-docker
 
 # install hook dependencies
 RUN apt-get install -yq python-pip
-RUN pip install pyyaml
+RUN pip install pyyaml requests
 
 # install hook utilities
 RUN apt-get install -yq curl vim
