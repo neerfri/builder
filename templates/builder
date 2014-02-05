@@ -117,7 +117,9 @@ if __name__ == '__main__':
             with open(slug_path) as f:
                 for chunk in iter(lambda: f.read(128), b''):
                     sha256.update(chunk)
-            body['sha'] = sha256.hexdigest()
+        # use sha of master
+        with open(os.path.join(repo_dir, 'refs/heads/master')) as f:
+            body['sha'] = f.read().strip('\n')
         # trigger build hook
         sys.stdout.write('\n       Launching... ')
         sys.stdout.flush()
