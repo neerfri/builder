@@ -2,15 +2,16 @@
 
 A Docker image that builds Docker images, for use in the [Deis](http://deis.io) open source PaaS.
 
-[![image](https://d207aa93qlcgug.cloudfront.net/img/icons/framed-icon-checked-repository.svg)](https://index.docker.io/u/deis/builder/)
-
-[**Trusted Build**](https://index.docker.io/u/deis/builder/)
+[**deis/builder @ Docker Index**](https://index.docker.io/u/deis/builder/)
 
 This Docker image is based on the trusted build [deis/base](https://index.docker.io/u/deis/base/), which itself is based on the official [ubuntu:12.04](https://index.docker.io/_/ubuntu/) base image.
 
+### Tagged Versions
+- deis/builder:**v0.1.0**
+
 ## Usage
 
-TBD
+Coming Soon!
 
 ## License
 
