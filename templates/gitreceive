@@ -45,7 +45,7 @@ EOF
       # if block if you wish to run it for others as well.
       if [[ $refname = "refs/heads/master" ]] ; then
  
-        git archive $newrev | $GITHOME/receiver "$RECEIVE_REPO" "$newrev" "$RECEIVE_USER" "$RECEIVE_FINGERPRINT"  
+        $GITHOME/receiver "$RECEIVE_REPO" "$newrev" "$RECEIVE_USER" "$RECEIVE_FINGERPRINT"  
  
         rc=$?
         if [[ $rc != 0 ]] ; then
