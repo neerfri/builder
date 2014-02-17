@@ -6,6 +6,8 @@ A Docker image that builds Docker images, for use in the [Deis](http://deis.io) 
 
 This Docker image is based on the trusted build [deis/base](https://index.docker.io/u/deis/base/), which itself is based on the official [ubuntu:12.04](https://index.docker.io/_/ubuntu/) base image.
 
+Please add any issues you find with this software to the parent [Deis project](https://github.com/opdemand/deis/issues).
+
 ### Tagged Versions
 - deis/builder:**v0.1.0**
 
