@@ -5,11 +5,14 @@ ENV DEBIAN_FRONTEND noninteractive
 
 # upgrade base system packages
 RUN apt-get update
-RUN apt-get -yq upgrade
+#RUN apt-get -yq upgrade
+# "apt-get upgrade" in a container really doesn't work, see
+# https://github.com/dotcloud/docker/issues/3934 and
+# https://github.com/dotcloud/docker/issues/1724
 
-# hack for initctl not being available in Ubuntu
-RUN dpkg-divert --local --rename --add /sbin/initctl
-RUN ln -s /bin/true /sbin/initctl
+# # hack for initctl not being available in Ubuntu
+# RUN dpkg-divert --local --rename --add /sbin/initctl
+# RUN ln -s /bin/true /sbin/initctl
 
 # install ssh server
 RUN apt-get install -yq openssh-server
