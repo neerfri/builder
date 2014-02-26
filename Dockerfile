@@ -4,7 +4,7 @@ MAINTAINER Gabriel Monroy <gabriel@opdemand.com>
 ENV DEBIAN_FRONTEND noninteractive
 
 # upgrade base system packages
-RUN apt-get update
+# RUN apt-get update
 #RUN apt-get -yq upgrade
 # "apt-get upgrade" in a container really doesn't work, see
 # https://github.com/dotcloud/docker/issues/3934 and
@@ -21,11 +21,11 @@ RUN dpkg-reconfigure openssh-server
 RUN mkdir -p /var/run/sshd
 
 # install docker in docker deps
+RUN apt-get install -yq aufs-tools iptables ca-certificates lxc
 RUN echo deb http://archive.ubuntu.com/ubuntu precise universe > /etc/apt/sources.list.d/universe.list
 RUN echo "deb http://get.docker.io/ubuntu docker main" > /etc/apt/sources.list.d/docker.list
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9
 RUN apt-get update -q
-RUN apt-get install -yq aufs-tools iptables ca-certificates lxc
 RUN apt-get install -yq lxc-docker-0.8.0
 
 # install hook dependencies

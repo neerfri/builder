@@ -9,6 +9,7 @@ This Docker image is based on the trusted build [deis/base](https://index.docker
 Please add any issues you find with this software to the parent [Deis project](https://github.com/opdemand/deis/issues).
 
 ### Tagged Versions
+- deis/builder:**v0.1.2**
 - deis/builder:**v0.1.1**
 - deis/builder:**v0.1.0**
 

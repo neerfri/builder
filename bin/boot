@@ -16,12 +16,21 @@ export HOST=${HOST:-localhost}
 export PORT=${PORT:-22}
 export PROTO=${PROTO:-tcp}
 
+# wait for etcd to be available
+until etcdctl -C $ETCD ls >/dev/null; do
+	echo "waiting for etcd at $ETCD..."
+	sleep $(($ETCD_TTL/2))  # sleep for half the TTL
+done
+
+# wait until etcd has discarded potentially stale values
+sleep $(($ETCD_TTL+1))
+
 # seed initial service configuration if necessary
 $(dirname ${BASH_SOURCE[0]})/seed >/dev/null
 
 # wait for confd to run once and install initial templates
 until confd -onetime -node $ETCD -config-file /app/confd.toml; do
-	echo "connecting to $ETCD to install initial templates..."
+	echo "waiting for confd to write initial templates..."
 	sleep $(($ETCD_TTL/2))  # sleep for half the TTL
 done
 
