@@ -35,6 +35,9 @@ RUN pip install pyyaml requests
 # install hook utilities
 RUN apt-get install -yq curl vim
 
+# install all i18n locales
+RUN ln -s /usr/share/i18n/SUPPORTED /var/lib/locales/supported.d/all && locale-gen
+
 # install git and configure gituser
 ENV GITHOME /home/git
 ENV GITUSER git
